@@ -1,4 +1,4 @@
 backbone-lifeguard
 ==================
 
-Type Safety for your Backbone Models
+Type Safety for your Backbone Models.
