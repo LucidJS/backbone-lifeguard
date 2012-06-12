@@ -8,15 +8,47 @@ Type Safety for your Backbone Models.
 * **Deep JSON** both ways (set internal models with a nested JSON and generate JSON from nested models)
 * **Construct nested model** based on an id through constructor and set
 
+## Strict Typing
+
+### Attribute Declaration (replaces or suppliments 'defaults')
+
 ```
-model : {
-  keys: 'propertyName',
-  type: 'string'
-  default: 'defaultValue'
+attrs: {
+  propertyName: {
+    type: 'string',
+    default: 'defaultValue',
+    valid: function(){
+      //run validation or coersion code before type check
+    }
+  },
+  anotherPropertyName: {
+    type: 'string',
+    default: 'defaultValue',
+    valid: function(){
+      //run validation or coersion code before type check
+    }
+  }
 }
 ```
 
-## Strict Typing
+### Supported Types
+
+* BackboneModel (reference)
+* BackboneCollection (reference)
+* 'string' ('foo')
+* 'number' (0, 1, 1.2)
+* 'integer' (0, 1, 2)
+* 'array' ([])
+* 'object' ({})
+* 'bool' (true, false)
+* 'regex' (regex ex: /x/)
+* 'date' (date object)
+
+all types accept **null**
+
+### 'valid' parameter
+
+Valid can be either an array of allowed values or a function.  The 'valid' check will run before the check against type, so it can be used for coersion as well as validation.
 
 ## Disallow non-declared properties
 
@@ -46,6 +78,14 @@ foo.toJSON({
 ```
 
 ## Notes
+
+A useful pattern is to have the default value for a collection be an empty collection, that way when you do:
+
+```
+modelInstance.get('collectionName').each(function(){ ... })
+```
+
+you won't have to check to see if the collection is set or not.  Though you can still check length.  
 
 Model methods to overwrite:
 
