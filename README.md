@@ -79,6 +79,14 @@ foo.toJSON({
 
 ## Notes
 
+A useful pattern is to have the default value for a collection be an empty collection, that way when you do:
+
+```
+modelInstance.get('collectionName').each(function(){ ... })
+```
+
+you won't have to check to see if the collection is set or not.  Though you can still check length.  
+
 Model methods to overwrite:
 
 * constructor (?)
