@@ -8,15 +8,46 @@ Type Safety for your Backbone Models.
 * **Deep JSON** both ways (set internal models with a nested JSON and generate JSON from nested models)
 * **Construct nested model** based on an id through constructor and set
 
+## Strict Typing
+
+### Attribute Declaration (replaces or suppliments 'defaults')
+
 ```
-model : {
-  keys: 'propertyName',
-  type: 'string'
-  default: 'defaultValue'
+attrs: {
+  propertyName: {
+    type: 'string',
+    default: 'defaultValue',
+    valid: function(){
+      //run validation or coersion code before type check
+    }
+  },
+  anotherPropertyName: {
+    type: 'string',
+    default: 'defaultValue',
+    valid: function(){
+      //run validation or coersion code before type check
+    }
+  }
 }
 ```
 
-## Strict Typing
+### Supported Types
+
+* backboneModel/Collection (ModelName, CollectionName)
+* string ('foo')
+* number (0, 1, 1.2)
+* integer (0, 1, 2)
+* array ([])
+* object ({})
+* bool (true, false)
+* regex (regex ex: /x/)
+* date (date object)
+
+all types accept **null**
+
+### 'valid' parameter
+
+Valid can be either an array of allowed values or a function.  The 'valid' check will run before the check against type, so it can be used for coersion as well as validation.
 
 ## Disallow non-declared properties
 
