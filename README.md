@@ -33,15 +33,16 @@ attrs: {
 
 ### Supported Types
 
-* backboneModel/Collection (ModelName, CollectionName)
-* string ('foo')
-* number (0, 1, 1.2)
-* integer (0, 1, 2)
-* array ([])
-* object ({})
-* bool (true, false)
-* regex (regex ex: /x/)
-* date (date object)
+* BackboneModel (reference)
+* BackboneCollection (reference)
+* 'string' ('foo')
+* 'number' (0, 1, 1.2)
+* 'integer' (0, 1, 2)
+* 'array' ([])
+* 'object' ({})
+* 'bool' (true, false)
+* 'regex' (regex ex: /x/)
+* 'date' (date object)
 
 all types accept **null**
 
