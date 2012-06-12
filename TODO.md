@@ -1,5 +1,5 @@
 # TODO
-## Planning
+## Planning- DONE BY EOD JUNE 12th
 - Write read me first draft (elevator pitch)
   - micro, compact
   - optional
@@ -14,7 +14,7 @@
 - spec model containment (includes to/from JSON)
 
 
-## Development
+## Development ALPHA DONE BY EOD JUNE 18th
 setup grunt
 setup docs
 setup tests
