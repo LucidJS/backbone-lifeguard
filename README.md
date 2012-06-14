@@ -18,14 +18,20 @@ attrs: {
     type: 'string',
     default: 'defaultValue',
     valid: function(){
-      //run validation or coersion code before type check
+      //run validation check
+    },
+    transform: function(){
+      //return changed value
     }
   },
   anotherPropertyName: {
     type: 'string',
     default: 'defaultValue',
     valid: function(){
-      //run validation or coersion code before type check
+      //run validation check
+    },
+    transform: function(){
+      //return changed value
     }
   }
 }
@@ -46,9 +52,17 @@ attrs: {
 
 all types accept **null**
 
+### Order of operations
+
+Set/Constructor > model.validate() > attr.tranform() > attr.valid() > attr.typeCheck() > actual set.
+
 ### 'valid' parameter
 
-Valid can be either an array of allowed values or a function.  The 'valid' check will run before the check against type, so it can be used for coersion as well as validation.
+Accepts a function, returns either true or a string/object.  Anything other than true fires the error event.
+
+### 'tranform' parameter
+
+Accepts a function.  Returns the value of the attr.
 
 ## Disallow non-declared properties
 
