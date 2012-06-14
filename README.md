@@ -108,7 +108,7 @@ This only runs if `attrs` is declared in the model.
 
 ## Deep JSON
 
-### Construct and set contained models using JSON and generate output JSON from contained models
+### Construct and set contained models using JSON
 
 ```
 var ChildModel = Backbone.Model.extend({
@@ -132,18 +132,6 @@ var foo = new Foo({
     childProperty: 'value'
   }
 });
-
-foo.toJSON():
-
-/*
-output:
-
-{
-  childModel : {
-    childProperty: 'value'
-  }
-}
-*/
 ```
 
 ### toJSON options
@@ -180,6 +168,8 @@ foo.toJSON({
 ```
 
 ## Notes
+
+add toJSON method to each attr that is of type regex.
 
 A useful pattern is to have the default value for a collection be an empty collection, that way when you do:
 
