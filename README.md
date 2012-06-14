@@ -42,7 +42,6 @@ None of the fields are required.  If you want your default value to be set to nu
 ```
 attrs: {
   propertyName: {}
-  }
 }
 ```
 
@@ -50,14 +49,15 @@ attrs: {
 
 * BackboneModel (reference)
 * BackboneCollection (reference)
-* 'string' ('foo')
-* 'number' (0, 1, 1.2)
+* SpecificClass (reference)
+* 'string' || String ('foo')
+* 'number' || Number (0, 1, 1.2)
 * 'integer' (0, 1, 2)
-* 'array' ([])
-* 'object' ({})
-* 'bool' (true, false)
-* 'regex' (regex ex: /x/)
-* 'date' (date object)
+* 'array' || Array ([])
+* 'object' || Object ({})
+* 'boolean' || Boolean (true, false)
+* 'regexp' || RegExp (regex ex: /x/)
+* 'date' || Date (date object)
 
 all types accept **null**
 
@@ -117,12 +117,36 @@ output:
 */
 ```
 
-### Set options to only show id of nested model and not output it all to JSON
+### toJSON options
 
 ```
-var foo = new Model();
 foo.toJSON({
-  nestToID: ['modelName', 'otherModelName.subModel'] //don't really like 'nestToID', but it is descriptive enough for now 
+  noDefaults: true,
+  include: []
+});
+```
+
+#### noDefaults
+
+set to try to not include any of the values that are the same as their default
+
+#### include
+
+a whitelist array of `attrs` to include in the JSON output
+
+```
+foo.toJSON({
+  noDefaults: true,
+  include: ['id', 'title']
+});
+```
+
+NOTE: Will add support for nesting in the future
+
+```
+foo.toJSON({
+  noDefaults: true,
+  include: ['id', 'title', 'attrModelType.id']
 });
 ```
 
