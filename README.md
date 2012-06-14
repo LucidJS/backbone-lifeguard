@@ -3,14 +3,23 @@ backbone-lifeguard
 
 Type Safety for your Backbone Models.
 
+# Opening Description
+
+# Installation
+
+# Usage
+
+
+
 * **Strict typing** on model properties
 * **Disallow non-declared properties** in constructor and set
 * **Deep JSON** both ways (set internal models with a nested JSON and generate JSON from nested models)
-* **Construct nested model** based on an id through constructor and set
 
 ## Strict Typing
 
 ### Attribute Declaration (replaces or suppliments 'defaults')
+
+attrs does not replace defaults, but runs in addition.
 
 ```
 attrs: {
@@ -37,12 +46,11 @@ attrs: {
 }
 ```
 
-None of the fields are required.  If you want your default value to be set to null and don't want to set any of the other params, you can simple set the value to `{}`.
+None of the attrs fields are required.
 
 ```
 attrs: {
   propertyName: {}
-  }
 }
 ```
 
@@ -50,18 +58,37 @@ attrs: {
 
 * BackboneModel (reference)
 * BackboneCollection (reference)
-* 'string' ('foo')
-* 'number' (0, 1, 1.2)
+* SpecificClass (reference)
+* 'string' || String ('foo')
+* 'number' || Number (0, 1, 1.2)
 * 'integer' (0, 1, 2)
-* 'array' ([])
-* 'object' ({})
-* 'bool' (true, false)
-* 'regex' (regex ex: /x/)
-* 'date' (date object)
+* 'array' || Array ([])
+* 'object' || Object ({})
+* 'boolean' || Boolean (true, false)
+* 'regexp' || RegExp (regex ex: /x/)
+* 'date' || Date (date object)
 
 all types accept **null**
 
-### Order of operations
+## Automatic Coersion
+
+### Backbone Models
+
+.set() accepts either a backbonemodel of the correct type or an object literal that validates when creating an instance of that type.  Any set completely overrides prior value. 
+
+### Backbone Collections
+
+.set() accepts either a backbonecollection of the correct type reference or an array containing object literals or backbone models.  Any set completely overrides prior value.  
+
+### Date
+
+.set() accepts either a string or a date object in JSON date format ('2012-06-14T22:42:42.229Z') or a date.toString() format ('Thu Jun 14 2012 15:50:31 GMT-0700 (PDT)'), if it a string, we converts it into a date object.
+
+### RegExp
+
+.set() accepts either a string of a regexp or a regexp object, if it is a regexp string, we convert it into a regexp object. 
+
+## Order of operations
 
 Set/Constructor > model.validate() > attr.tranform() > attr.valid() > attr.typeCheck() > actual set.
 
@@ -77,9 +104,11 @@ Accepts a function.  Returns the value of the attr.
 
 Only properties that are declared in `attrs` or in the standard `defaults` will be allowed for set and construct, any other values will send an error to the error listener.
 
+This only runs if `attrs` is declared in the model.
+
 ## Deep JSON
 
-### Construct and set contained models using JSON and generate output JSON from contained models
+### Construct and set contained models using JSON
 
 ```
 var ChildModel = Backbone.Model.extend({
@@ -103,30 +132,44 @@ var foo = new Foo({
     childProperty: 'value'
   }
 });
-
-foo.toJSON():
-
-/*
-output:
-
-{
-  childModel : {
-    childProperty: 'value'
-  }
-}
-*/
 ```
 
-### Set options to only show id of nested model and not output it all to JSON
+### toJSON options
 
 ```
-var foo = new Model();
 foo.toJSON({
-  nestToID: ['modelName', 'otherModelName.subModel'] //don't really like 'nestToID', but it is descriptive enough for now 
+  noDefaults: true,
+  include: []
+});
+```
+
+#### noDefaults
+
+set to try to not include any of the values that are the same as their default
+
+#### include
+
+a whitelist array of `attrs` to include in the JSON output
+
+```
+foo.toJSON({
+  noDefaults: true,
+  include: ['id', 'title']
+});
+```
+
+NOTE: Will add support for nesting in the future
+
+```
+foo.toJSON({
+  noDefaults: true,
+  include: ['id', 'title', 'attrModel.id']
 });
 ```
 
 ## Notes
+
+add toJSON method to each attr that is of type regex.
 
 A useful pattern is to have the default value for a collection be an empty collection, that way when you do:
 
