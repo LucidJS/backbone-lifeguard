@@ -37,6 +37,15 @@ attrs: {
 }
 ```
 
+None of the fields are required.  If you want your default value to be set to null and don't want to set any of the other params, you can simple set the value to `{}`.
+
+```
+attrs: {
+  propertyName: {}
+  }
+}
+```
+
 ### Supported Types
 
 * BackboneModel (reference)
@@ -66,21 +75,47 @@ Accepts a function.  Returns the value of the attr.
 
 ## Disallow non-declared properties
 
+Only properties that are declared in `attrs` or in the standard `defaults` will be allowed for set and construct, any other values will send an error to the error listener.
+
 ## Deep JSON
 
-### Ensure that we can .get() sub modules all the way
+### Construct and set contained models using JSON and generate output JSON from contained models
 
 ```
-var foo = new Model({
-  subModel: {
-    subModelAttr: 'value' 
+var ChildModel = Backbone.Model.extend({
+  attrs : {
+    childProperty : {
+      type : 'string'
+    }
   }
 });
 
-foo.get('subModel').get('subModelAttr'); //returns 'value'
-```
+var Foo = Backbone.Model.extend({
+  attrs : {
+    childModel : {
+      type : ChildModel
+    }
+  }
+});
 
-## Construct nested model
+var foo = new Foo({
+  childModel :{
+    childProperty: 'value'
+  }
+});
+
+foo.toJSON():
+
+/*
+output:
+
+{
+  childModel : {
+    childProperty: 'value'
+  }
+}
+*/
+```
 
 ### Set options to only show id of nested model and not output it all to JSON
 
@@ -107,8 +142,3 @@ Model methods to overwrite:
 * get (?)
 * set
 * toJSON
-
-
-
-
-
