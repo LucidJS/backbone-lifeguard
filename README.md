@@ -3,52 +3,51 @@ backbone-lifeguard
 
 Type Safety for your Backbone Models.
 
-# Opening Description
+# Opening description
 
 # Installation
 
 # Usage
 
 
-
 * **Strict typing** on model properties
-* **Disallow non-declared properties** in constructor and set
+* **Disallow undeclared properties** in constructor and set
 * **Deep JSON** both ways (set internal models with a nested JSON and generate JSON from nested models)
 
-## Strict Typing
+## Strict typing
 
-### Attribute Declaration (replaces or suppliments 'defaults')
+### Attribute declaration (replaces or suppliments 'defaults')
 
-attrs does not replace defaults, but runs in addition.
+`attrs` does not replace defaults, but runs in addition to it.
 
-```
+```javascript
 attrs: {
   propertyName: {
     type: 'string',
-    default: 'defaultValue',
-    valid: function(){
+    value: 'defaultValue',
+    validate: function() {
       //run validation check
     },
-    transform: function(){
+    transform: function() {
       //return changed value
     }
   },
   anotherPropertyName: {
-    type: 'string',
-    default: 'defaultValue',
-    valid: function(){
-      //run validation check
+    type: 'number',
+    value: 3.1416,  // default value
+    validate: function() {
+      // run validation check
     },
-    transform: function(){
-      //return changed value
+    transform: function() {
+      // return changed value
     }
   }
 }
 ```
 
-None of the attrs fields are required.
+None of the `attrs` fields are required.
 
-```
+```javascript
 attrs: {
   propertyName: {}
 }
@@ -60,75 +59,111 @@ attrs: {
 * BackboneCollection (reference)
 * SpecificClass (reference)
 * 'string' || String ('foo')
-* 'number' || Number (0, 1, 1.2)
-* 'integer' (0, 1, 2)
+* 'number' || Number (0, 1, 3.14159)
+* 'integer' (-7, 1, 2, 42)
 * 'array' || Array ([])
 * 'object' || Object ({})
 * 'boolean' || Boolean (true, false)
-* 'regexp' || RegExp (regex ex: /x/)
+* 'regexp' || RegExp (/foo.*bar/g)
 * 'date' || Date (date object)
 
-all types accept **null**
+All types accept **null** as their value.
 
-## Automatic Coersion
+## Automatic coersion
 
-### Backbone Models
+### Backbone models
 
-.set() accepts either a backbonemodel of the correct type or an object literal that validates when creating an instance of that type.  Any set completely overrides prior value. 
+.set() accepts either a BackboneModel of the correct type or an object literal that validates when creating an instance of that type.  Any set completely overrides prior value. 
 
 ### Backbone Collections
 
-.set() accepts either a backbonecollection of the correct type reference or an array containing object literals or backbone models.  Any set completely overrides prior value.  
+.set() accepts either a BackboneCollection of the correct type reference or an array containing object literals or backbone models.  Any set completely overrides prior value.  
 
 ### Date
 
-.set() accepts either a string or a date object in JSON date format ('2012-06-14T22:42:42.229Z') or a date.toString() format ('Thu Jun 14 2012 15:50:31 GMT-0700 (PDT)'), if it a string, we converts it into a date object.
+.set() accepts either a string or a Date object in JSON date format ('2012-06-14T22:42:42.229Z') or a Date.toString() format ('Thu Jun 14 2012 15:50:31 GMT-0700 (PDT)'). If it's a string, we convert it into a Date object.
 
 ### RegExp
 
-.set() accepts either a string of a regexp or a regexp object, if it is a regexp string, we convert it into a regexp object. 
+.set() accepts either a string of a regexp or a RegExp object. If it is a regexp string, we convert it into a RegExp object.
 
 ## Order of operations
 
-Set/Constructor > model.validate() > attr.tranform() > attr.valid() > attr.typeCheck() > actual set.
+set/constructor > model._validate():
+ * attr.tranform()
+ * attr.validate()
+ * attr.typeCheck()
 
-### 'valid' parameter
+If both `validate` and `typeCheck` pass, continue with normal execution (actually set the attr value).
 
-Accepts a function, returns either true or a string/object.  Anything other than true fires the error event.
+### 'validate' parameter
+
+Accepts a function, which returns either nothing or an error string/object, just like Backbone's `validate` method. If `validate` returns an error, `set` and `save` will not continue, and the model attributes will not be modified. Failed validations trigger an "error" event.
 
 ### 'tranform' parameter
 
 Accepts a function.  Returns the value of the attr.
+Used to convert passed-in value into the data type appropriate for this attribute, such as converting a string "123" into a number 123.
 
-## Disallow non-declared properties
+## Disallow undeclared properties
 
-Only properties that are declared in `attrs` or in the standard `defaults` will be allowed for set and construct, any other values will send an error to the error listener.
+Only properties that are declared in `attrs` or in the standard `defaults` will be allowed for set and constructor. Any other values will trigger an "error" event.
 
-This only runs if `attrs` is declared in the model.
+This only happens if `attrs` is declared in the model.
+
+Here are the possible scenarios for interaction between properties set in `attrs` and `defaults`:
+
+1. If a property is defined in `defaults` but **not** in `attrs` or if `attrs` entry for that property does not contain `value`, it will be automatically added to the `attrs` hash.
+2. If a property is defined in `attrs`, but **not** in `defaults`, it will be automatically added to the `defaults` hash.
+3. If a property is defined in both the `defaults` and `attrs` with a `value` parameter set **and** the value is different between the two, an "error" event will get triggered during construction.
+
+Examples:
+```javascript
+defaults: {
+  title: 'FooBar'
+}
+// is the same as
+attrs: {
+  title: {
+    value: 'FooBar'
+  }
+}
+
+// This will cause an "error" event to trigger during construction
+// due to conflict in setting default value:
+defaults: {
+  title: 'FooBar'
+},
+attrs: {
+  title: {
+    value: 'BarBaz'
+  }
+}
+```
 
 ## Deep JSON
 
 ### Construct and set contained models using JSON
 
-```
+```javascript
 var ChildModel = Backbone.Model.extend({
-  attrs : {
-    childProperty : {
-      type : 'string'
+  attrs: {
+    childProperty: {
+      type: 'string'
     }
   }
 });
 
 var Foo = Backbone.Model.extend({
-  attrs : {
-    childModel : {
-      type : ChildModel
+  attrs: {
+    childModel: {
+      type: ChildModel
     }
   }
 });
 
 var foo = new Foo({
-  childModel :{
+  childModel: {
     childProperty: 'value'
   }
 });
@@ -136,52 +171,45 @@ var foo = new Foo({
 
 ### toJSON options
 
-```
-foo.toJSON({
-  noDefaults: true,
-  include: []
-});
-```
-
-#### noDefaults
-
-set to try to not include any of the values that are the same as their default
-
-#### include
-
-a whitelist array of `attrs` to include in the JSON output
-
-```
+```javascript
 foo.toJSON({
   noDefaults: true,
   include: ['id', 'title']
 });
 ```
 
-NOTE: Will add support for nesting in the future
+#### 'noDefaults' parameter
 
-```
+If the `noDefaults` parameter is set to `true`, the output from `toJSON` will exclude any attributes whose values are the same as the default values of that model.
+
+#### 'include' parameter
+
+A whitelist array of attributes to include in the JSON output.
+
+NOTE: Will add support for nesting in the future:
+
+```javascript
 foo.toJSON({
-  noDefaults: true,
   include: ['id', 'title', 'attrModel.id']
 });
 ```
 
 ## Notes
 
-add toJSON method to each attr that is of type regex.
+Add toJSON method to each attr that is of type regexp.
 
 A useful pattern is to have the default value for a collection be an empty collection, that way when you do:
 
-```
-modelInstance.get('collectionName').each(function(){ ... })
+```javascript
+modelInstance.get('collectionName').each(function() { ... })
 ```
 
-you won't have to check to see if the collection is set or not.  Though you can still check length.  
+you won't have to check to see if the collection is set or not.  Though you can still check length.
 
-Model methods to overwrite:
+Model methods that will be overwritten:
 
 * constructor (?)
 * get (?)
 * set
+* _validate
 * toJSON
