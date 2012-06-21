@@ -18,10 +18,10 @@ Type Safety for your Backbone Models.
 
 ### Attribute declaration (replaces or suppliments 'defaults')
 
-`attrs` does not replace defaults, but runs in addition to it.
+`structure` does not replace defaults, but runs in addition to it.
 
 ```javascript
-attrs: {
+structure: {
   propertyName: {
     type: 'string',
     value: 'defaultValue',
@@ -45,10 +45,10 @@ attrs: {
 }
 ```
 
-None of the `attrs` fields are required.
+None of the `structure` fields are required.
 
 ```javascript
-attrs: {
+structure: {
   propertyName: {}
 }
 ```
@@ -107,15 +107,15 @@ Used to convert passed-in value into the data type appropriate for this attribut
 
 ## Disallow undeclared properties
 
-Only properties that are declared in `attrs` or in the standard `defaults` will be allowed for set and constructor. Any other values will trigger an "error" event.
+Only properties that are declared in `structure` or in the standard `defaults` will be allowed for set and constructor. Any other values will trigger an "error" event.
 
-This only happens if `attrs` is declared in the model.
+This only happens if `structure` is declared in the model.
 
-Here are the possible scenarios for interaction between properties set in `attrs` and `defaults`:
+Here are the possible scenarios for interaction between properties set in `structure` and `defaults`:
 
-1. If a property is defined in `defaults` but **not** in `attrs` or if `attrs` entry for that property does not contain `value`, it will be automatically added to the `attrs` hash.
-2. If a property is defined in `attrs`, but **not** in `defaults`, it will be automatically added to the `defaults` hash.
-3. If a property is defined in both the `defaults` and `attrs` with a `value` parameter set **and** the value is different between the two, an "error" event will get triggered during construction.
+1. If a property is defined in `defaults` but **not** in `structure` or if `structure` entry for that property does not contain `value`, it will be automatically added to the `structure` hash.
+2. If a property is defined in `structure`, but **not** in `defaults`, it will be automatically added to the `defaults` hash.
+3. If a property is defined in both the `defaults` and `structure` with a `value` parameter set **and** the value is different between the two, an "error" event will get triggered during construction.
 
 Examples:
 ```javascript
@@ -123,7 +123,7 @@ defaults: {
   title: 'FooBar'
 }
 // is the same as
-attrs: {
+structure: {
   title: {
     value: 'FooBar'
   }
@@ -134,7 +134,7 @@ attrs: {
 defaults: {
   title: 'FooBar'
 },
-attrs: {
+structure: {
   title: {
     value: 'BarBaz'
   }
@@ -147,7 +147,7 @@ attrs: {
 
 ```javascript
 var ChildModel = Backbone.Model.extend({
-  attrs: {
+  structure: {
     childProperty: {
       type: 'string'
     }
@@ -155,7 +155,7 @@ var ChildModel = Backbone.Model.extend({
 });
 
 var Foo = Backbone.Model.extend({
-  attrs: {
+  structure: {
     childModel: {
       type: ChildModel
     }
