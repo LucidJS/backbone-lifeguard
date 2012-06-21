@@ -1,0 +1,20 @@
+{
+  "author": "",
+  "name": "backbone-lifeguard",
+  "description": "Type safety for your Backbone models",
+  "version": "0.1.0",
+  "homepage": "https://github.com/LucidJS/backbone-lifeguard",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/LucidJS/backbone-lifeguard.git"
+  },
+  "main": "./backbone-lifeguard.js",
+  "engines": {
+    "node": ">0.4.x"
+  },
+  "dependencies": {
+    "underscore": "1.3.x",
+    "backbone": "0.9.x"
+  },
+  "devDependencies": {}
+}
