@@ -92,9 +92,9 @@ All types accept **null** as their value.
 set/constructor > model._validate():
  * attr.tranform()
  * attr.validate()
- * attr.typeCheck()
+ * attr._typeCheck()
 
-If both `validate` and `typeCheck` pass, continue with normal execution (actually set the attr value).
+If both `validate` and `_typeCheck` pass, continue with normal execution (actually set the attr value).
 
 ### 'validate' parameter
 
@@ -102,8 +102,12 @@ Accepts a function, which returns either nothing or an error string/object, just
 
 ### 'tranform' parameter
 
-Accepts a function.  Returns the value of the attr.
-Used to convert passed-in value into the data type appropriate for this attribute, such as converting a string "123" into a number 123.
+Accepts a function.  Returns the converted value of the attr.
+Used to convert passed-in value into the data type appropriate for this attribute, such as converting a string "123" into a number 123. If the value cannot be converted, the function will return 'undefined'.
+
+### '_typeCheck'
+
+This is an internal method to test validity of the attribute value after all other conversions and validations have been done.  Do not overwrite.
 
 ## Disallow undeclared properties
 
