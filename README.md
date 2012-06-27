@@ -18,10 +18,10 @@ Type Safety for your Backbone Models.
 
 ### Attribute declaration (replaces or suppliments 'defaults')
 
-`structure` does not replace defaults, but runs in addition to it.
+`fields` does not replace defaults, but runs in addition to it.
 
 ```javascript
-structure: {
+fields: {
   propertyName: {
     type: 'string',
     value: 'defaultValue',
@@ -45,10 +45,10 @@ structure: {
 }
 ```
 
-None of the `structure` fields are required.
+None of the `fields` properties are required.
 
 ```javascript
-structure: {
+fields: {
   propertyName: {}
 }
 ```
@@ -68,6 +68,17 @@ structure: {
 * 'date' || Date (date object)
 
 All types accept **null** as their value.
+
+### Reserved data type names
+* '_class' - Reserved for a non-Backbone class data type
+* '_model' - Reserved for Backbone Model
+* '_collection' - Reserved for Backbone Collection
+
+Using any of the reserved data types will result in an error.
+
+### Other data types
+
+Any other data types besides those listed in the [Supported Types](#supported-types) section will generate an error.
 
 ## Automatic coersion
 
@@ -96,14 +107,14 @@ set/constructor > model._validate():
 
 If both `validate` and `_typeCheck` pass, continue with normal execution (actually set the attr value).
 
-### 'validate' parameter
-
-Accepts a function, which returns either nothing or an error string/object, just like Backbone's `validate` method. If `validate` returns an error, `set` and `save` will not continue, and the model attributes will not be modified. Failed validations trigger an "error" event.
-
 ### 'tranform' parameter
 
 Accepts a function.  Returns the converted value of the attr.
 Used to convert passed-in value into the data type appropriate for this attribute, such as converting a string "123" into a number 123. If the value cannot be converted, the function will return 'undefined'.
+
+### 'validate' parameter
+
+Accepts a function, which returns either nothing or an error string/object, just like Backbone's `validate` method. If `validate` returns an error, `set` and `save` will not continue, and the model attributes will not be modified. Failed validations trigger an "error" event.
 
 ### '_typeCheck'
 
@@ -111,15 +122,15 @@ This is an internal method to test validity of the attribute value after all oth
 
 ## Disallow undeclared properties
 
-Only properties that are declared in `structure` or in the standard `defaults` will be allowed for set and constructor. Any other values will trigger an "error" event.
+Only properties that are declared in `fields` or in the standard `defaults` will be allowed for set and constructor. Any other values will trigger an "error" event.
 
-This only happens if `structure` is declared in the model.
+This only happens if `fields` is declared in the model.
 
-Here are the possible scenarios for interaction between properties set in `structure` and `defaults`:
+Here are the possible scenarios for interaction between properties set in `fields` and `defaults`:
 
-1. If a property is defined in `defaults` but **not** in `structure` or if `structure` entry for that property does not contain `value`, it will be automatically added to the `structure` hash.
-2. If a property is defined in `structure`, but **not** in `defaults`, it will be automatically added to the `defaults` hash.
-3. If a property is defined in both the `defaults` and `structure` with a `value` parameter set **and** the value is different between the two, an "error" event will get triggered during construction.
+1. If a property is defined in `defaults` but **not** in `fields` or if `fields` entry for that property does not contain `value`, it will be automatically added to the `fields` hash.
+2. If a property is defined in `fields`, but **not** in `defaults`, it will be automatically added to the `defaults` hash.
+3. If a property is defined in both the `defaults` and `fields` with a `value` parameter set **and** the value is different between the two, an "error" event will get triggered during construction.
 
 Examples:
 ```javascript
@@ -127,7 +138,7 @@ defaults: {
   title: 'FooBar'
 }
 // is the same as
-structure: {
+fields: {
   title: {
     value: 'FooBar'
   }
@@ -138,7 +149,7 @@ structure: {
 defaults: {
   title: 'FooBar'
 },
-structure: {
+fields: {
   title: {
     value: 'BarBaz'
   }
@@ -151,7 +162,7 @@ structure: {
 
 ```javascript
 var ChildModel = Backbone.Model.extend({
-  structure: {
+  fields: {
     childProperty: {
       type: 'string'
     }
@@ -159,7 +170,7 @@ var ChildModel = Backbone.Model.extend({
 });
 
 var Foo = Backbone.Model.extend({
-  structure: {
+  fields: {
     childModel: {
       type: ChildModel
     }
@@ -208,12 +219,12 @@ A useful pattern is to have the default value for a collection be an empty colle
 modelInstance.get('collectionName').each(function() { ... })
 ```
 
-you won't have to check to see if the collection is set or not.  Though you can still check length.
+you won't have to check to see if the collection is set or not.  Though you can still check its length.
 
 Model methods that will be overwritten:
 
 * constructor (?)
 * get (?)
-* set
+* set (?)
 * _validate
 * toJSON
