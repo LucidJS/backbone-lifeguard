@@ -1,52 +1,65 @@
+// backbone-lifeguard.js (c) 2012 LucidJS and other contributors
+// backbone-lifeguard may be freely distributed under the MIT license.
+// For all details and documentation:
+// http://lucidjs.github.com/backbone-lifeguard
+
 (function(root) {
 
   var _ = root._ || require('underscore'),
       Backbone = root.Backbone || require('backbone'),
 
-      // save old methods to call them later
-      oldModel = Backbone.Model,
-      oldExtend = oldModel.extend,
-      oldModelProto = oldModel.prototype,
-      oldSet = oldModelProto.set,
-      oldValidate = oldModelProto._validate,
-      oldIsValid = oldModelProto.isValid,
-      oldToJSON = oldModelProto.toJSON,
-      oldCollection = Backbone.Collection,
+      // Save original methods to call them later, mostly as a 'super' equivalent.
+      originalModel = Backbone.Model,
+      originalExtend = originalModel.extend,
+      originalModelProto = originalModel.prototype,
+      originalSet = originalModelProto.set,
+      originalValidate = originalModelProto._validate,
+      originalIsValid = originalModelProto.isValid,
+      originalToJSON = originalModelProto.toJSON,
+      originalCollection = Backbone.Collection,
       
-      // misc
+      // misc, shortcut
       toString = Object.prototype.toString;
 
   /**
   * Checks the validity of the provided value against the type.
   * Uses underscore's "isFooType"-style methods, such as "isString".
-  * This is used for all "standard" types, since all of them have a method in underscore.
+  * This is used for all "standard" JS types, since all of them have a method in underscore.
+  * This function is invoked during validation and runs in the scope of a field definition.
   */
   function basicTypeCheck(value) {
     var t = this;
-    return _.isNull(value) || _['is' + t.type](value);
+    return (value === null) || _['is' + t._type](value);
   }
 
   /**
-  * Accepts either null or an instance of specified class or model.
+  * Checks whether the provided value is null or an instance of a class.
+  * This function is invoked during validation and runs in the scope of a field definition.
   */
   function classTypeCheck(value) {
     var t = this;
-    return _.isNull(value) || (value instanceof t.type);
+    return (value === null) || (value instanceof t.type);
   }
 
   /**
-  * Coerse an object into a specified class or model instance.
+  * Turn an object into a specified class or model instance.
   * If a passed-in value is already an instance of that class,
-  * just pass it right through, otherwise attempt to create a new
-  * instance of the class based on the values by calling the class
+  * just pass it right through. Otherwise attempt to create a new
+  * instance of the class based on the value by calling the class
   * constructor with just the value parameter.
   * If the constructor of your class has a different signature, you will need
   * to create a custom transform method for it.
+  * This function is invoked during validation and runs in the scope of a field definition.
   */
   function classTransform(value) {
     var klass = value,
         t = this;
     
+    // Don't create a class instance from 'null'.
+    if (value === null) {
+      return null;
+    }
+
     if (!(value instanceof t.type)) {
       klass = new t.type(value);
     }
@@ -55,76 +68,99 @@
 
   var SUPPORTED_TYPES = {
         'string': {
-          type: 'String',
+          _type: 'String',
           _typeCheck: basicTypeCheck
         },
         'number': {
-          type: 'Number',
+          _type: 'Number',
           _typeCheck: basicTypeCheck
         },
         'array': {
-          type: 'Array',
+          _type: 'Array',
           _typeCheck: basicTypeCheck
         },
         'object': {
-          type: 'Object',
+          _type: 'Object',
           _typeCheck: basicTypeCheck
         },
         'boolean': {
-          type: 'Boolean',
+          _type: 'Boolean',
           _typeCheck: basicTypeCheck
         },
         'regexp': {
-          type: 'RegExp',
+          _type: 'RegExp',
           /**
-          * Coerse a string into a regexp object
+          * Turn a string into a RegExp object. If the 'value' parameter is a string,
+          * it must be in '/pattern/flags' format. We parse that string and create
+          * a regexp with 'pattern' and 'flags' as parameters to it.
+          * Adds a 'toJSON' method to the returned RegExp object.
           */
           transform: function(value) {
-            var re = value;
+            var re = value,
+                parser = /^\/(.*)\/([gimy]*)$/,
+                parts;
+
             if (_.isString(value)) {
-              re = new RegExp(value);
-              // no need for further testing here since most strings will convert to RegExp one way or another
+              parts = parser.exec(value);
+              if (parts) {
+                re = new RegExp(parts[1], parts[2]);
+              }
             }
+            
+            // TODO: add a toJSON to this instance
             return re;
           },
           _typeCheck: basicTypeCheck
         },
         'date': {
-          type: 'Date',
+          _type: 'Date',
           /**
-          * Coerse a string into a date object
+          * Turn a string into a Date object.
           */
           transform: function(value) {
             var date = value;
+
             if (_.isString(value)) {
-              date = new Date(value);  // try converting it
-              if (isNaN(date.valueOf())) {  // if the conversion failed, revert to 'undefined' value
+              date = new Date(value);
+
+              // If the conversion failed, revert to 'undefined' value.
+              if (isNaN(date.valueOf())) {
                 date = void 0;
               }
             }
+
             return date;
           },
           _typeCheck: basicTypeCheck
         },
         
-        'integer': {  // (?)
-          type: 'Number'
+        'integer': {
+          _type: 'Number'
+          // TODO: fill in the rest: transform, validate (?), _typeCheck
         },
     
-        '_class': {
+        'class': {
+          _type: 'class',
           transform: classTransform,
           _typeCheck: classTypeCheck
         },
-        '_model': {  // BB Model
+
+        // Backbone Model
+        'model': {
+          _type: 'model',
           transform: classTransform,
           _typeCheck: classTypeCheck
         },
-        '_collection': {  // BB Collection
+        
+        // Backbone Collection
+        'collection': {
+          _type: 'collection',
           transform: classTransform,
           _typeCheck: classTypeCheck
         }
       },
-      CLASS_TYPES = ['_class', '_model', '_collection'];
+
+      RESERVED_TYPES = ['class', 'model', 'collection'];
   
   var BackboneLifeguard = {
     /**
@@ -141,7 +177,7 @@
             value = attrValue;
 
         if (field) {
-          // for each attribute defined in 'fields' do
+          // For each attribute defined in 'fields' do:
           // * transform
           if (_.isFunction(field.transform)) {
             value = field.transform(value);
@@ -163,7 +199,7 @@
             }
           }
           
-          // all checks passed, so put the (possibly transformed) value back in the attributes array
+          // All checks passed, so put the (possibly transformed) value back in the attributes array.
           attrs[name] = value;
           
         } else {
@@ -171,7 +207,7 @@
         }
       });
       
-      // exit if there were errors during transformations/validations
+      // Exit if there were errors during transformations/validations.
       if (!_.isEmpty(errors)) {
         if (options && options.error) {
           options.error(t, errors, options);
@@ -181,7 +217,7 @@
         return false;
       }
       
-      return oldValidate.call(t, attrs, options);
+      return originalValidate.call(t, attrs, options);
     },
     
     /**
@@ -189,106 +225,103 @@
     */
     toJSON: function(options) {
       var t = this;
-      return oldToJSON.call(t, options);
+      return originalToJSON.call(t, options);
     }
   };
   
-  // extend BB.Model
-  oldModel.extend = function(protoProps, classProps) {
+  // Extend Backbone.Model.
+  originalModel.extend = function(protoProps, classProps) {
     // protoProps will now include 'fields'
-    var broken = false,
-        defaults = protoProps && protoProps.defaults || {},
+    var defaults = (protoProps && protoProps.defaults) || {},
         fields = protoProps && protoProps.fields;
 
-    if (fields && _.isObject(fields)) {  // don't do anything special if 'fields' was not defined, since it'll be considered a "normal model"
-      // adjust the protoProps to merge 'fields' and 'defaults'
-      // iterate over 'fields' and add those back into defaults, if not found
+    // Don't do anything special if 'fields' was not defined, since it'll be considered a "normal model".
+    if (fields && _.isObject(fields)) {
+      // Adjust the protoProps to merge 'fields' and 'defaults'.
+
+      // Iterate over 'fields' and add those back into defaults, if not found.
       _.each(fields, function(definition, name) {
-        var type,
-            typedef;  // supported type definition from the list (default methods, etc)
+        var originalType,
+            internalType,
+            typedef;
 
-        if (!broken) {
-          if (!_.isObject(definition)) {
-            // early exit if fields' definition is not an object
-            console.warn('Backbone-Lifeguard cannot be initialized: "fields" must contain only objects.');
-            broken = true;
-            return;
+        // Early exit if a field definition is not an object.
+        if (!_.isObject(definition)) {
+          throw new Error('Backbone-Lifeguard cannot be initialized: "fields" must contain only objects.');
+        }
+
+        // The property is not in defaults, so create an entry for it.
+        if (_.has(definition, 'defaultValue') && !_.has(defaults, name)) {
+          defaults[name] = definition.defaultValue;
+        }
+
+        // Find a supported type based on supplied 'type' property.
+        // Apply appropriate default handlers for the data type.
+        if (_.has(definition, 'type')) {
+          originalType = definition.type;
+
+          if (_.isString(originalType)) {
+            internalType = originalType.toLowerCase();
+            // Safeguard users from using '_model', '_collection', and '_class' types explicitly
+            if (_.contains(RESERVED_TYPES, internalType)) {
+              throw new Error('Backbone-lifeguard cannot be initialized: reserved type for attribute "' + name + '".');
+            }
+          } else if (_.isFunction(originalType)) {
+            // 'toString' returns a string in format "[object Foo]", where "Foo" is one of the basic JS types, like "Array" or "Number".
+            // We take that and convert it into just string "foo".
+            internalType = toString.call(originalType.prototype).slice(8, -1).toLowerCase();
+          } else {
+            // We only support a string or a class reference for data types.
+            throw new Error('Backbone-lifeguard cannot be initialized: unrecognizable type for attribute "' + name + '".');
           }
-          if (_.has(definition, 'value') && !_.has(defaults, name)) {
-            // the property is not in defaults, so create an entry for it
-            defaults[name] = definition.value;
+
+          // Type "function" can mean either a "class", a Backbone Model, or a Backbone Collection
+          if (internalType === 'function') {
+            if (originalType.prototype instanceof originalModel) {
+              internalType = '_model';
+            } else if (originalType.prototype instanceof originalCollection) {
+              internalType = '_collection';
+            } else {
+              internalType = '_class';
+            }
           }
-
-          // Normalize 'type' property based on the list of supported types.
-          // Apply appropriate default handlers for the data type.
-          if (_.has(definition, 'type')) {
-            type = definition.type;
-
-            if (_.isString(type)) {
-              type = type.toLowerCase();
-              if (_.contains(CLASS_TYPES, type)) {
-                // Safeguard users from using '_model', '_collection', and '_class' types explicitly
-                console.warn('Backbone-lifeguard cannot be initialized: reserved type for attribute "' + name + '".');
-                broken = true;
-                return;
-              }
-            } else {
-              // toString returns a string in format "[object Foo]". We take that and convert it into just "foo".
-              type = toString.call(type).slice(8, -1).toLowerCase();
-            }
-
-            // type "function" can mean either a "class", a Backbone Model, or a Backbone Collection
-            if (type === 'function') {
-              if (definition.type.prototype instanceof oldModel) {
-                type = '_model';
-              } else if (definition.type.prototype instanceof oldCollection) {
-                type = '_collection';
-              } else {
-                type = '_class';
-              }
-            }
-            
-            typedef = SUPPORTED_TYPES[type];
-            if (typedef) {
-              // fill in any missing transformers, validations, _typeChecks
-              _.defaults(definition, typedef);
-            } else {
-              // TODO: error on unsupported data types
-              console.warn('Backbone-lifeguard cannot be initialized: unsupported data type for attribute "' + name + '".');
-              broken = true;
-              return;
-            }
+          
+          // Fill in any missing transformers, validations, _typeChecks.
+          typedef = SUPPORTED_TYPES[internalType];
+          if (typedef) {
+            _.defaults(definition, typedef);
+          } else {
+            throw new Error('Backbone-lifeguard cannot be initialized: unsupported data type for attribute "' + name + '".');
           }
         }
       });
 
-      if (!broken) {
-        // iterate over defaults and merge those into fields
-        _.each(defaults, function(value, key) {
-          var t = this;
+      // Iterate over 'defaults' and merge those into 'fields'.
+      _.each(defaults, function(value, key) {
+        var t = this;
 
-          if (!_.has(fields, key)) {
-            // the property is not in fields, so create an entry for it
-            fields[key] = {
-              value: value
-            };
-          } else if (fields[key].value !== value) {
-            // error: a property's default value is different between 'defaults' and 'fields'
-            t.trigger('error', t, key);
-            return null;
-          }
-        });
+        if (!_.has(fields, key)) {
+          // This attribute is not defined in 'fields', so create an entry for it.
+          fields[key] = {
+            defaultValue: value
+          };
+        } else if (fields[key].defaultValue !== value) {
+          // error: a property's default value is different between 'defaults' and 'fields'
+          // TODO: figure out the proper error signature and handling here.
+          t.trigger('error', t, key);
+          return null;
+        }
+      });
 
-        // put defaults and fields back in props hash
-        protoProps.defaults = defaults;
-        protoProps.fields = fields;
+      // Put defaults and fields back in props hash.
+      protoProps.defaults = defaults;
+      protoProps.fields = fields;
 
-        // inject lifeguard methods
-        _.extend(oldModelProto, BackboneLifeguard);
-      }
+      // Inject lifeguard methods.
+      _.extend(originalModelProto, BackboneLifeguard);
     }
     
-    return oldExtend.call(oldModel, protoProps, classProps);
+    return originalExtend.call(originalModel, protoProps, classProps);
   };
   
 }(this));
