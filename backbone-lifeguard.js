@@ -272,6 +272,7 @@
             internalType = toString.call(originalType.prototype).slice(8, -1).toLowerCase();
           } else {
             // We only support a string or a class reference for data types.
+console.log("Type: ", originalType);
             throw new Error('Backbone-lifeguard cannot be initialized: unrecognizable type for attribute "' + name + '".');
           }
 

@@ -8,7 +8,9 @@
   // Dependencies
   var Backbone = root.Backbone || require('backbone'),
       _ = root._ || require('underscore'),
-      Lifeguard = root.BackboneLifeguard || require('../backbone-lifeguard');
+      Lifeguard = root.BackboneLifeguard || require('../backbone-lifeguard'),
+      Author = root.Author || require('./models/Author'),
+      Book = root.Book || require('./models/Book');
 
   /**
   * Unit tests for the Backbone-Lifeguard library
